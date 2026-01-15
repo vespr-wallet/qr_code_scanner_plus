@@ -138,8 +138,14 @@ class _QRViewExampleState extends State<QRViewExample> {
                           onPressed: () async {
                             final photoFile = await ImagePicker()
                                 .pickImage(source: ImageSource.gallery);
-                            await controller
+                            final results = await controller
                                 ?.scanQrcodeFromImage(photoFile!.path);
+
+                            if (results != null && results.isNotEmpty) {
+                              setState(() {
+                                result = results.first;
+                              });
+                            }
                           },
                           child:
                               const Text('pic', style: TextStyle(fontSize: 20)),
