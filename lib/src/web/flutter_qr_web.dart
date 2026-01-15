@@ -387,8 +387,7 @@ class QRViewControllerWeb implements QRViewController {
   }
 
   @override
-  Future<List<String>> scanQrcodeFromImage(String path) {
-    // TODO: implement getQrCodeByImagePath
+  Future<List<Barcode>> scanQrcodeFromImage(String path) {
     throw UnimplementedError();
   }
 }

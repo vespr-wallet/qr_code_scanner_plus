@@ -118,8 +118,6 @@ class QRView(
     }
 
     private fun scanQrcodeFromGallery(path: String?, result: MethodChannel.Result) {
-        // val path = call.arguments as String
-        // DecodeHintType 和EncodeHintType
         val options = BitmapFactory.Options()
         options.inJustDecodeBounds = true
         BitmapFactory.decodeFile(path, options)
@@ -132,14 +130,17 @@ class QRView(
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
         val source = RGBLuminanceSource(width, height, pixels)
         val hints: Hashtable<DecodeHintType, String> = Hashtable<DecodeHintType, String>()
-        hints[DecodeHintType.CHARACTER_SET] = "utf-8" // 设置二维码内容的编码
+        hints[DecodeHintType.CHARACTER_SET] = "utf-8"
         try {
             val result1 = QRCodeReader().decode(BinaryBitmap(HybridBinarizer(source)), hints)
-            result.success(listOf(result1.text))
+            val code = mapOf(
+                "code" to result1.text,
+                "type" to result1.barcodeFormat.name,
+                "rawBytes" to result1.rawBytes
+            )
+            result.success(listOf(code))
         } catch (e: Exception) {
-            // nothing qrcode found
-            val list: List<String> = listOf()
-            result.success(list)
+            result.success(emptyList<Any>())
         }
     }
 

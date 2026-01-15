@@ -126,11 +126,24 @@ public class QRView:NSObject,FlutterPlatformView {
     func scanQrcodeFromGallery(_ path: String, _ result: @escaping FlutterResult) {
         let image = UIImage.init(contentsOfFile: path)
         let array = self.readQRCodeFrom(image!) as NSArray
-        var res = [String]()
+        var res = [[String: Any]]()
         array.enumerateObjects({object, index, stop in
             let tmp = object as? CIQRCodeFeature
             if (tmp != nil) {
-                res.append(tmp!.messageString ?? "")
+                let bytes = { () -> Data? in
+                    if #available(iOS 11.0, *) {
+                        return tmp!.errorCorrectedPayload
+                    } else {
+                        return nil
+                    }
+                }()
+                let code: [String: Any]
+                if let safeBytes = bytes {
+                    code = ["code": tmp!.messageString ?? "", "type": "QR_CODE", "rawBytes": safeBytes]
+                } else {
+                    code = ["code": tmp!.messageString ?? "", "type": "QR_CODE"]
+                }
+                res.append(code)
             }
         })
         return result(res)
