@@ -137,6 +137,9 @@ class NativeBarcodeScanner: NSObject, AVCaptureMetadataOutputObjectsDelegate {
             if sess?.isRunning == true {
                 sess?.stopRunning()
             }
+            DispatchQueue.main.async {
+                _ = sess
+            }
         }
 
         DispatchQueue.main.async {
