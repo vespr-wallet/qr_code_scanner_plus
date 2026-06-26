@@ -202,7 +202,9 @@ public class QRView:NSObject,FlutterPlatformView {
                     }
                     try self.scanner?.startScanning()
                 } catch {
-                    let scanError = FlutterError(code: "unknown-error", message: "Unable to start scanning", details: error)
+                    // Convert Swift Error to String (localizedDescription) to avoid EXC_CRASH (SIGABRT)
+                    // since FlutterStandardMethodCodec only supports primitive types and cannot serialize raw Error/NSError objects.
+                    let scanError = FlutterError(code: "unknown-error", message: "Unable to start scanning", details: error.localizedDescription)
                     result(scanError)
                 }
             }
