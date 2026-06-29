@@ -9,8 +9,21 @@ import Foundation
 import Flutter
 import AVFoundation
 
+/// A container view that notifies on every layout pass. This lets us keep the
+/// preview layer's frame and video orientation in sync with the actual view
+/// bounds, including after device/interface rotations, without relying on
+/// Flutter re-invoking `setDimensions`.
+class PreviewContainerView: UIView {
+    var onLayout: (() -> Void)?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        onLayout?()
+    }
+}
+
 public class QRView:NSObject,FlutterPlatformView {
-    var previewView: UIView
+    var previewView: PreviewContainerView
     var scanner: NativeBarcodeScanner?
     var registrar: FlutterPluginRegistrar
     var channel: FlutterMethodChannel
@@ -39,9 +52,18 @@ public class QRView:NSObject,FlutterPlatformView {
 
     public init(withFrame frame: CGRect, withRegistrar registrar: FlutterPluginRegistrar, withId id: Int64, params: Dictionary<String, Any>){
         self.registrar = registrar
-        previewView = UIView(frame: frame)
+        previewView = PreviewContainerView(frame: frame)
         cameraFacing = CameraPosition(rawValue: UInt(Int(params["cameraFacing"] as! Double))) ?? .back
         channel = FlutterMethodChannel(name: "net.touchcapture.qr.flutterqrplus/qrview_\(id)", binaryMessenger: registrar.messenger())
+        super.init()
+
+        // Keep the preview layer's frame and orientation in sync with the view
+        // bounds on every layout pass (covers interface/device rotations).
+        previewView.onLayout = { [weak self] in
+            guard let self = self, let sc = self.scanner else { return }
+            sc.getPreviewLayer()?.frame = self.previewView.bounds
+            sc.updateVideoOrientation()
+        }
     }
 
     deinit {
@@ -99,8 +121,8 @@ public class QRView:NSObject,FlutterPlatformView {
             if let previewLayer = sc.getPreviewLayer() {
                 previewLayer.frame = self.previewView.bounds
             }
-            // Re-apply orientation in case the view rotated between start and
-            // the layout change (e.g. SizeChangedLayoutNotifier after rotation).
+            // Re-apply orientation here too; the view's layoutSubviews callback
+            // also handles this on rotation, but this covers explicit resizes.
             sc.updateVideoOrientation()
         } else {
             // Create new preview.

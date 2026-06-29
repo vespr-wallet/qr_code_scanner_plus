@@ -46,16 +46,14 @@ class NativeBarcodeScanner: NSObject, AVCaptureMetadataOutputObjectsDelegate {
         guard let connection = previewLayer?.connection,
               connection.isVideoOrientationSupported else { return }
 
-        let orientation: UIInterfaceOrientation
-        if #available(iOS 13.0, *),
-           let scene = previewView.window?.windowScene
+        // Resolve the interface orientation from the window's scene, falling back
+        // to the first foreground-active scene when the view is not yet attached.
+        let scene = previewView.window?.windowScene
             ?? UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene })
-                .first(where: { $0.activationState == .foregroundActive }) {
-            orientation = scene.interfaceOrientation
-        } else {
-            orientation = UIApplication.shared.statusBarOrientation
-        }
+                .compactMap { $0 as? UIWindowScene }
+                .first { $0.activationState == .foregroundActive }
+        let orientation = scene?.interfaceOrientation ?? .portrait
+
         switch orientation {
         case .landscapeLeft:      connection.videoOrientation = .landscapeRight
         case .landscapeRight:     connection.videoOrientation = .landscapeLeft
