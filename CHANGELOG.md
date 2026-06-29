@@ -3,6 +3,7 @@
 - Migrated to built-in Kotlin (AGP 9.0 compatibility). Removed `apply plugin: 'kotlin-android'` and the Kotlin Gradle Plugin classpath from `android/build.gradle`; same change in the example app's `example/android/app/build.gradle`. The `kotlin.compilerOptions { jvmTarget = JVM_17 }` block is now used in place of the legacy `kotlinOptions` block.
 - Bumped minimum Dart SDK to 3.12.0 and minimum Flutter version to 3.44.0, as required by the new built-in Kotlin DSL.
 - Example app: enabled `android.builtInKotlin=true` and `android.newDsl=true` in `example/android/gradle.properties`.
+- [iOS] Fix camera preview rotated 90° on landscape-only apps by setting `AVCaptureVideoPreviewLayer.connection.videoOrientation` (#19)
 
 ## 2.1.2
 

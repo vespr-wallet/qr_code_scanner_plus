@@ -38,6 +38,32 @@ class NativeBarcodeScanner: NSObject, AVCaptureMetadataOutputObjectsDelegate {
         }
     }
 
+    // MARK: - Layout updates
+
+    /// Re-applies the current interface orientation to the preview layer. Call
+    /// this after the view's bounds or the device orientation changes.
+    func updateVideoOrientation() {
+        guard let connection = previewLayer?.connection,
+              connection.isVideoOrientationSupported else { return }
+
+        let orientation: UIInterfaceOrientation
+        if #available(iOS 13.0, *),
+           let scene = previewView.window?.windowScene
+            ?? UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) {
+            orientation = scene.interfaceOrientation
+        } else {
+            orientation = UIApplication.shared.statusBarOrientation
+        }
+        switch orientation {
+        case .landscapeLeft:      connection.videoOrientation = .landscapeRight
+        case .landscapeRight:     connection.videoOrientation = .landscapeLeft
+        case .portraitUpsideDown: connection.videoOrientation = .portraitUpsideDown
+        default:                  connection.videoOrientation = .portrait
+        }
+    }
+
     // MARK: - Private state
 
     private let previewView: UIView
@@ -108,6 +134,10 @@ class NativeBarcodeScanner: NSObject, AVCaptureMetadataOutputObjectsDelegate {
         let layer = AVCaptureVideoPreviewLayer(session: session)
         layer.videoGravity = .resizeAspectFill
         layer.frame = previewView.bounds
+
+        // Match the preview orientation to the current interface orientation so
+        // landscape-only apps do not see a 90° rotated feed.
+        updateVideoOrientation()
 
         self.session = session
         self.previewLayer = layer

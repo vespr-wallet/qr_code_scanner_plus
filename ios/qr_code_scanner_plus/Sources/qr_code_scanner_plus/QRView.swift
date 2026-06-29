@@ -99,6 +99,9 @@ public class QRView:NSObject,FlutterPlatformView {
             if let previewLayer = sc.getPreviewLayer() {
                 previewLayer.frame = self.previewView.bounds
             }
+            // Re-apply orientation in case the view rotated between start and
+            // the layout change (e.g. SizeChangedLayoutNotifier after rotation).
+            sc.updateVideoOrientation()
         } else {
             // Create new preview.
             scanner = NativeBarcodeScanner(previewView: previewView, cameraPosition: cameraFacing)
