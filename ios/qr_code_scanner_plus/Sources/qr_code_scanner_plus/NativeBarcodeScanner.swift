@@ -133,14 +133,15 @@ class NativeBarcodeScanner: NSObject, AVCaptureMetadataOutputObjectsDelegate {
         layer.videoGravity = .resizeAspectFill
         layer.frame = previewView.bounds
 
-        // Match the preview orientation to the current interface orientation so
-        // landscape-only apps do not see a 90° rotated feed.
-        updateVideoOrientation()
-
         self.session = session
         self.previewLayer = layer
         self.isSessionStarted = true
         self.isFrozen = false
+
+        // Match the preview orientation to the current interface orientation so
+        // landscape-only apps do not see a 90° rotated feed. Must run after
+        // `self.previewLayer` is assigned since it reads `previewLayer?.connection`.
+        updateVideoOrientation()
 
         DispatchQueue.main.async {
             self.previewView.layer.insertSublayer(layer, at: 0)
