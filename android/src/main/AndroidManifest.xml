@@ -1,4 +1,13 @@
 <manifest package="net.touchcapture.qr.flutterqrplus"
-    xmlns:tools="http://schemas.android.com/tools">
-  <uses-sdk tools:overrideLibrary="com.google.zxing.client.android" />
+    xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- CAMERA permission is declared by the plugin itself. Previously it was
+       inherited by consuming apps through zxing-android-embedded's manifest
+       merge; after the CameraX migration that library is gone, so the
+       declaration must live here to keep existing apps working unchanged. -->
+  <uses-permission android:name="android.permission.CAMERA" />
+
+  <!-- Declared as NOT required so apps using this plugin remain installable
+       on camera-less devices (same effective behavior as before). -->
+  <uses-feature android:name="android.hardware.camera" android:required="false" />
+  <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 </manifest>
