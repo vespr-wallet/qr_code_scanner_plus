@@ -13,17 +13,18 @@ class QrScannerOverlayShape extends ShapeBorder {
     double? cutOutWidth,
     double? cutOutHeight,
     this.cutOutBottomOffset = 0,
-  })  : cutOutWidth = cutOutWidth ?? cutOutSize ?? 250,
-        cutOutHeight = cutOutHeight ?? cutOutSize ?? 250 {
+  }) : cutOutWidth = cutOutWidth ?? cutOutSize ?? 250,
+       cutOutHeight = cutOutHeight ?? cutOutSize ?? 250 {
     assert(
       borderLength <=
           min(this.cutOutWidth, this.cutOutHeight) / 2 + borderWidth * 2,
       "Border can't be larger than ${min(this.cutOutWidth, this.cutOutHeight) / 2 + borderWidth * 2}",
     );
     assert(
-        (cutOutWidth == null && cutOutHeight == null) ||
-            (cutOutSize == null && cutOutWidth != null && cutOutHeight != null),
-        'Use only cutOutWidth and cutOutHeight or only cutOutSize');
+      (cutOutWidth == null && cutOutHeight == null) ||
+          (cutOutSize == null && cutOutWidth != null && cutOutHeight != null),
+      'Use only cutOutWidth and cutOutHeight or only cutOutSize',
+    );
   }
 
   final Color borderColor;
@@ -55,18 +56,9 @@ class QrScannerOverlayShape extends ShapeBorder {
     }
 
     return _getLeftTopPath(rect)
-      ..lineTo(
-        rect.right,
-        rect.bottom,
-      )
-      ..lineTo(
-        rect.left,
-        rect.bottom,
-      )
-      ..lineTo(
-        rect.left,
-        rect.top,
-      );
+      ..lineTo(rect.right, rect.bottom)
+      ..lineTo(rect.left, rect.bottom)
+      ..lineTo(rect.left, rect.top);
   }
 
   @override
@@ -77,12 +69,14 @@ class QrScannerOverlayShape extends ShapeBorder {
     final borderOffset = borderWidth / 2;
     final _borderLength =
         borderLength > min(cutOutHeight, cutOutHeight) / 2 + borderWidth * 2
-            ? borderWidthSize / 2
-            : borderLength;
-    final _cutOutWidth =
-        cutOutWidth < width ? cutOutWidth : width - borderOffset;
-    final _cutOutHeight =
-        cutOutHeight < height ? cutOutHeight : height - borderOffset;
+        ? borderWidthSize / 2
+        : borderLength;
+    final _cutOutWidth = cutOutWidth < width
+        ? cutOutWidth
+        : width - borderOffset;
+    final _cutOutHeight = cutOutHeight < height
+        ? cutOutHeight
+        : height - borderOffset;
 
     final backgroundPaint = Paint()
       ..color = overlayColor
@@ -110,14 +104,8 @@ class QrScannerOverlayShape extends ShapeBorder {
     );
 
     canvas
-      ..saveLayer(
-        rect,
-        backgroundPaint,
-      )
-      ..drawRect(
-        rect,
-        backgroundPaint,
-      )
+      ..saveLayer(rect, backgroundPaint)
+      ..drawRect(rect, backgroundPaint)
       // Draw top right corner
       ..drawRRect(
         RRect.fromLTRBAndCorners(
@@ -163,10 +151,7 @@ class QrScannerOverlayShape extends ShapeBorder {
         borderPaint,
       )
       ..drawRRect(
-        RRect.fromRectAndRadius(
-          cutOutRect,
-          Radius.circular(borderRadius),
-        ),
+        RRect.fromRectAndRadius(cutOutRect, Radius.circular(borderRadius)),
         boxPaint,
       )
       ..restore();

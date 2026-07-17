@@ -56,7 +56,7 @@ enum BarcodeFormat {
   upcEanExtension,
 
   /// Unknown
-  unknown
+  unknown,
 }
 
 extension BarcodeTypesExtension on BarcodeFormat {
