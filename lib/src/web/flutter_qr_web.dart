@@ -37,8 +37,9 @@ class WebQrView extends StatefulWidget {
   State<StatefulWidget> createState() => _WebQrViewState();
 
   static Future<bool> cameraAvailable() async {
-    final sources =
-        await web.window.navigator.mediaDevices.enumerateDevices().toDart;
+    final sources = await web.window.navigator.mediaDevices
+        .enumerateDevices()
+        .toDart;
     // List<String> vidIds = [];
     var hasCam = false;
     for (final e in sources.toDart) {
@@ -88,8 +89,9 @@ class _WebQrViewState extends State<WebQrView> {
   Future start() async {
     await _makeCall();
     _frameIntervall?.cancel();
-    _frameIntervall =
-        Timer.periodic(const Duration(milliseconds: 200), (timer) {
+    _frameIntervall = Timer.periodic(const Duration(milliseconds: 200), (
+      timer,
+    ) {
       _captureFrame2();
     });
   }
@@ -140,7 +142,8 @@ class _WebQrViewState extends State<WebQrView> {
               .toList();
 
           // attempt to find a main/primary camera. If none, use last back camera entry if it exists
-          final web.MediaDeviceInfo? idealCameraMediaInfo = backCameras
+          final web.MediaDeviceInfo? idealCameraMediaInfo =
+              backCameras
                   .where(
                     (camera) =>
                         camera.label.toLowerCase().contains('main') ||
@@ -152,12 +155,11 @@ class _WebQrViewState extends State<WebQrView> {
           constraints = UserMediaOptions(
             video: idealCameraMediaInfo != null
                 ? VideoOptions(
-                    deviceId:
-                        DeviceIdOptions(exact: idealCameraMediaInfo.deviceId),
+                    deviceId: DeviceIdOptions(
+                      exact: idealCameraMediaInfo.deviceId,
+                    ),
                   )
-                : VideoOptions(
-                    facingMode: "environment",
-                  ),
+                : VideoOptions(facingMode: "environment"),
           );
       }
 
@@ -169,8 +171,10 @@ class _WebQrViewState extends State<WebQrView> {
       widget.onPermissionSet?.call(_controller!, true);
       _localStream = stream;
       video.srcObject = _localStream;
-      video.setAttribute('playsinline',
-          'true'); // required to tell iOS safari we don't want fullscreen
+      video.setAttribute(
+        'playsinline',
+        'true',
+      ); // required to tell iOS safari we don't want fullscreen
       await video.play().toDart;
     } catch (e) {
       cancel();
@@ -231,8 +235,9 @@ class _WebQrViewState extends State<WebQrView> {
       final code = jsQR(imgData.data, canvas.width, canvas.height);
       // ignore: unnecessary_null_comparison
       if (code != null && code.data != null) {
-        _scanUpdateController
-            .add(Barcode(code.data, BarcodeFormat.qrcode, code.data.codeUnits));
+        _scanUpdateController.add(
+          Barcode(code.data, BarcodeFormat.qrcode, code.data.codeUnits),
+        );
       }
     } on NoSuchMethodError {
       // Do nothing, this exception occurs continously in web release when no
@@ -387,10 +392,12 @@ class QRViewControllerWeb implements QRViewController {
   }
 }
 
-Widget createWebQrView(
-        {onPlatformViewCreated, onPermissionSet, CameraFacing? cameraFacing}) =>
-    WebQrView(
-      onPlatformViewCreated: onPlatformViewCreated,
-      onPermissionSet: onPermissionSet,
-      cameraFacing: cameraFacing,
-    );
+Widget createWebQrView({
+  onPlatformViewCreated,
+  onPermissionSet,
+  CameraFacing? cameraFacing,
+}) => WebQrView(
+  onPlatformViewCreated: onPlatformViewCreated,
+  onPermissionSet: onPermissionSet,
+  cameraFacing: cameraFacing,
+);

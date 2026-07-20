@@ -6,5 +6,5 @@ enum CameraFacing {
   front,
 
   /// Unknown camera
-  unknown
+  unknown,
 }
