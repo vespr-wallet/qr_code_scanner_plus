@@ -5,7 +5,6 @@ import 'dart:core';
 import 'dart:developer';
 // import 'dart:html' as html;
 import 'dart:js_interop';
-import 'dart:ui' as ui;
 import 'dart:ui_web' as ui_web;
 import 'package:web/web.dart' as web;
 
@@ -60,7 +59,6 @@ class _WebQrViewState extends State<WebQrView> {
 
   QRViewControllerWeb? _controller;
 
-  late Size _size = const Size(0, 0);
   Timer? timer;
   String? code;
   String? _errorMsg;
@@ -79,6 +77,10 @@ class _WebQrViewState extends State<WebQrView> {
 
     facing = widget.cameraFacing ?? CameraFacing.front;
 
+    video.style
+      ..width = '100%'
+      ..height = '100%'
+      ..objectFit = 'cover';
     ui_web.platformViewRegistry.registerViewFactory(viewID, (int id) => video);
     // giving JavaScipt some time to process the DOM changes
     Timer(const Duration(milliseconds: 500), () {
@@ -224,13 +226,6 @@ class _WebQrViewState extends State<WebQrView> {
     ctx.drawImage(video, 0, 0);
     final imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    final size = Size(canvas.width.toDouble(), canvas.height.toDouble());
-    if (size != _size) {
-      setState(() {
-        _setCanvasSize(size);
-      });
-    }
-
     try {
       final code = jsQR(imgData.data, canvas.width, canvas.height);
       // ignore: unnecessary_null_comparison
@@ -254,41 +249,9 @@ class _WebQrViewState extends State<WebQrView> {
     if (_localStream == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        var zoom = 1.0;
-
-        if (_size.height != 0) zoom = constraints.maxHeight / _size.height;
-
-        if (_size.width != 0) {
-          final horizontalZoom = constraints.maxWidth / _size.width;
-          if (horizontalZoom > zoom) {
-            zoom = horizontalZoom;
-          }
-        }
-
-        return SizedBox(
-          width: constraints.maxWidth,
-          height: constraints.maxHeight,
-          child: Center(
-            child: SizedBox.fromSize(
-              size: _size,
-              child: Transform.scale(
-                alignment: Alignment.center,
-                scale: zoom,
-                child: HtmlElementView(viewType: viewID),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _setCanvasSize(ui.Size size) {
-    setState(() {
-      _size = size;
-    });
+    // The video covers the view with CSS (object-fit). Scaling the platform view with a Flutter transform left the
+    // preview at the camera's size inside a larger box on the Wasm build.
+    return SizedBox.expand(child: HtmlElementView(viewType: viewID));
   }
 }
 

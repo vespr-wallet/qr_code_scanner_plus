@@ -1,3 +1,7 @@
+## 2.3.1
+
+- [Web] The camera preview now fills the scanner view (CSS `object-fit: cover`). Scaling it with a Flutter transform left the preview at the camera's resolution inside a larger box.
+
 ## 2.3.0
 
 - [iOS] Prefer virtual rear cameras that can switch to the ultra-wide lens for close-range QR scanning while preserving the standard wide-angle framing (#17).
