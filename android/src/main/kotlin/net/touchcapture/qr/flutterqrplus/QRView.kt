@@ -12,6 +12,7 @@ import com.google.zxing.ResultPoint
 import com.journeyapps.barcodescanner.BarcodeCallback
 import com.journeyapps.barcodescanner.BarcodeResult
 import com.journeyapps.barcodescanner.DefaultDecoderFactory
+import com.journeyapps.barcodescanner.camera.CameraSettings
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -117,6 +118,8 @@ class QRView(
             }
 
             barcodeView.decoderFactory = DefaultDecoderFactory(null, null, null, 2)
+            // Keep the preview sharp as the code moves, instead of zxing's default focus-once-and-retry cycle.
+            barcodeView.cameraSettings.focusMode = CameraSettings.FocusMode.CONTINUOUS
 
             if (params[PARAMS_CAMERA_FACING] as Int == 1) {
                 barcodeView.cameraSettings?.requestedCameraId = cameraFacingFront

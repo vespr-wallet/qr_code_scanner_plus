@@ -1,3 +1,7 @@
+## Unreleased
+
+- [Android] Use continuous autofocus for the scanner preview. zxing's default focuses once and retries every two seconds, so codes moved closer stayed blurred until the next cycle.
+
 ## 2.3.1
 
 - [Web] The camera preview now fills the scanner view (CSS `object-fit: cover`). Scaling it with a Flutter transform left the preview at the camera's resolution inside a larger box.
