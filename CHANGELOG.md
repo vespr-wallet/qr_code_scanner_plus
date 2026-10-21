@@ -1,6 +1,6 @@
-## Unreleased
+## 2.3.2
 
-- [Android] Use continuous autofocus for the scanner preview. zxing's default focuses once and retries every two seconds, so codes moved closer stayed blurred until the next cycle.
+- [Android] Use continuous autofocus for the scanner preview. zxing's default focuses once and retries every two seconds, so codes moved closer stayed blurred until the next cycle (#35).
 
 ## 2.3.1
 
