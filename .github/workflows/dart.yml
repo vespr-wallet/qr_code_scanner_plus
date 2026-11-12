@@ -27,3 +27,6 @@ jobs:
         run: flutter analyze
       - name: Tests
         run: flutter test
+      - name: Build example release APK
+        working-directory: example
+        run: flutter build apk --release

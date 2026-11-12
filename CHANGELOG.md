@@ -7,6 +7,7 @@
 - Disposing a `QRView` no longer surfaces an unhandled error when stopping the camera fails.
 - CI runs `flutter test`; the package has widget tests for the failure path.
 - Example app: `.tool-versions` pins Flutter 3.50.0 like the package (it still said 3.41.0).
+- Tooling: CI builds the example's release APK. The example no longer tracks the generated `ios/Flutter/ephemeral` files, which held machine-local paths; they're ignored now.
 
 ## 2.3.3
 
