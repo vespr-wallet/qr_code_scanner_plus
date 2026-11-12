@@ -31,7 +31,10 @@ concurrency:
 
 jobs:
   orientation:
-    runs-on: macos-15
+    # ponytail: Intel (x64) runner because GitHub's arm64 macOS pool is starved
+    # (jobs are cancelled without ever getting a runner). Move back to macos-15
+    # (arm64) once capacity recovers, or before macos-15-intel is retired (~Aug 2027).
+    runs-on: macos-15-intel
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
