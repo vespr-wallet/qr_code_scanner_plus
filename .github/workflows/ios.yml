@@ -2,6 +2,7 @@ name: iOS tests
 
 on:
   push:
+    branches: [master]
     paths:
       - 'ios/**'
       - 'lib/**'
@@ -21,6 +22,12 @@ on:
       - 'example/pubspec.yaml'
       - 'tool/test_ios.sh'
       - '.github/workflows/ios.yml'
+
+# One run per PR: branches get only the pull_request run, and a new push to a
+# PR cancels its stale run. Pushes to master always run to completion.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   orientation:

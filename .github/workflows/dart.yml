@@ -1,6 +1,15 @@
 name: dart
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# One run per PR: branches get only the pull_request run, and a new push to a
+# PR cancels its stale run. Pushes to master always run to completion.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
