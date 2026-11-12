@@ -129,47 +129,55 @@ void main() {
     expect(find.text('Could not start the camera'), findsOneWidget);
   }, variant: _ios);
 
-  testWidgets('uses the provided texts, centred in the overlay cut-out', (
-    tester,
-  ) async {
-    final scanner = _FakeScanner(tester)..install();
-    scanner.failures.add(true);
-    tester.view.physicalSize = const Size(400, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
+  testWidgets(
+    'uses the provided texts, centred in the overlay cut-out, and the overlay lets Retry through',
+    (tester) async {
+      final scanner = _FakeScanner(tester)..install();
+      scanner.failures.add(true);
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(
-      _app(
-        QRView(
-          key: GlobalKey(),
-          onQRViewCreated: (_) {},
-          overlay: QrScannerOverlayShape(
-            cutOutSize: 300,
-            cutOutBottomOffset: 100,
+      await tester.pumpWidget(
+        _app(
+          QRView(
+            key: GlobalKey(),
+            onQRViewCreated: (_) {},
+            overlay: QrScannerOverlayShape(
+              cutOutSize: 300,
+              cutOutBottomOffset: 100,
+            ),
+            cameraErrorMessage: 'Kamera nicht verfügbar',
+            cameraRetryLabel: 'Erneut versuchen',
           ),
-          cameraErrorMessage: 'Kamera nicht verfügbar',
-          cameraRetryLabel: 'Erneut versuchen',
         ),
-      ),
-    );
-    await _settleStart(tester);
+      );
+      await _settleStart(tester);
 
-    expect(find.text('Could not start the camera'), findsNothing);
-    expect(find.text('Erneut versuchen'), findsOneWidget);
-    final cutOut = Rect.fromCenter(
-      center: const Offset(200, 400 - 100),
-      width: 300,
-      height: 300,
-    );
-    expect(
-      cutOut.contains(tester.getCenter(find.text('Kamera nicht verfügbar'))),
-      isTrue,
-    );
-    expect(
-      cutOut.contains(tester.getCenter(find.text('Erneut versuchen'))),
-      isTrue,
-    );
-  }, variant: _ios);
+      expect(find.text('Could not start the camera'), findsNothing);
+      expect(find.text('Erneut versuchen'), findsOneWidget);
+      final cutOut = Rect.fromCenter(
+        center: const Offset(200, 400 - 100),
+        width: 300,
+        height: 300,
+      );
+      expect(
+        cutOut.contains(tester.getCenter(find.text('Kamera nicht verfügbar'))),
+        isTrue,
+      );
+      expect(
+        cutOut.contains(tester.getCenter(find.text('Erneut versuchen'))),
+        isTrue,
+      );
+
+      // The overlay is drawn above the error but must not swallow the tap.
+      await tester.tap(find.text('Erneut versuchen'));
+      await _settleStart(tester);
+      expect(scanner.startScanCount, 2);
+      expect(find.text('Kamera nicht verfügbar'), findsNothing);
+    },
+    variant: _ios,
+  );
 
   testWidgets('a camera error reported later by the native side shows the '
       'error, and a camera start clears it', (tester) async {
