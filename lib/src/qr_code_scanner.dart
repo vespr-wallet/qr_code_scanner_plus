@@ -108,13 +108,19 @@ class _QRViewState extends State<QRView> {
           children: [
             _getPlatformQrView(),
             if (cameraError != null)
+              // Opaque, so nothing the app draws under the scanner (such as a
+              // loading indicator) shows through: without a camera frame the
+              // platform view is transparent.
               Positioned.fill(
-                child: _CameraErrorView(
-                  overlay: overlay,
-                  overlayMargin: widget.overlayMargin,
-                  message: widget.cameraErrorMessage,
-                  retryLabel: widget.cameraRetryLabel,
-                  onRetry: _retryCamera,
+                child: ColoredBox(
+                  color: const Color(0xFF000000),
+                  child: _CameraErrorView(
+                    overlay: overlay,
+                    overlayMargin: widget.overlayMargin,
+                    message: widget.cameraErrorMessage,
+                    retryLabel: widget.cameraRetryLabel,
+                    onRetry: _retryCamera,
+                  ),
                 ),
               ),
             // The overlay stays on top so its border frames the error too, but
@@ -286,7 +292,6 @@ class _CameraErrorView extends StatelessWidget {
 
   static const _textColor = Color(0xFFFFFFFF);
   static const _maxWidthWithoutOverlay = 320.0;
-  static const _backdropColor = Color(0xE6000000);
 
   @override
   Widget build(BuildContext context) {
@@ -335,18 +340,10 @@ class _CameraErrorView extends StatelessWidget {
 
     // Wrap the text at the available width and scale it down only when it
     // still does not fit the height (a small cut-out or long translations).
-    // The backdrop keeps the white text readable: without a camera frame the
-    // platform view is transparent and the app's background shows through.
-    Widget fitted(double width, {double radius = 0}) => DecoratedBox(
-      decoration: BoxDecoration(
-        color: _backdropColor,
-        borderRadius: BorderRadius.circular(radius),
-      ),
-      child: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: SizedBox(width: width, child: content),
-        ),
+    Widget fitted(double width) => Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: SizedBox(width: width, child: content),
       ),
     );
 
@@ -373,7 +370,7 @@ class _CameraErrorView extends StatelessWidget {
                     overlay.cutOutBottomOffset,
                 width: width,
                 height: height,
-                child: fitted(width, radius: overlay.borderRadius),
+                child: fitted(width),
               ),
             ],
           );

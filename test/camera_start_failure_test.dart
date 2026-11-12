@@ -223,6 +223,62 @@ void main() {
     expect(find.text('Erneut versuchen'), findsOneWidget);
   }, variant: _ios);
 
+  testWidgets('the error hides a loading indicator the app draws under the '
+      'scanner', (tester) async {
+    final scanner = _FakeScanner(tester)..install();
+    scanner.failures.add(true);
+    const spinnerKey = Key('app-spinner');
+
+    // Like the app: a spinner below the scanner until the camera shows.
+    await tester.pumpWidget(
+      _app(
+        Stack(
+          children: [
+            const Center(
+              child: SizedBox.square(key: spinnerKey, dimension: 40),
+            ),
+            QRView(
+              key: GlobalKey(),
+              onQRViewCreated: (_) {},
+              overlay: QrScannerOverlayShape(cutOutSize: 200),
+            ),
+          ],
+        ),
+      ),
+    );
+    await _settleStart(tester);
+
+    // The error view itself has no progress indicator.
+    expect(
+      find.descendant(
+        of: find.byType(QRView),
+        matching: find.byWidgetPredicate(
+          (w) => w.runtimeType.toString().contains('ProgressIndicator'),
+        ),
+      ),
+      findsNothing,
+    );
+
+    // An opaque box covering the whole scanner sits under the message.
+    final backdrop = find.ancestor(
+      of: find.text('Could not start the camera'),
+      matching: find.byWidgetPredicate(
+        (w) => w is ColoredBox && w.color.a == 1.0,
+      ),
+    );
+    expect(backdrop, findsOneWidget);
+    final covered = tester.getRect(backdrop);
+    expect(covered, tester.getRect(find.byType(QRView)));
+    final spinner = tester.getRect(find.byKey(spinnerKey));
+    expect(covered.intersect(spinner), spinner);
+
+    // While a retry runs the backdrop is gone, so the app's spinner shows.
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    expect(backdrop, findsNothing);
+    await _settleStart(tester);
+  }, variant: _ios);
+
   testWidgets('a failure after the view is removed is ignored', (tester) async {
     final scanner = _FakeScanner(tester)..install();
     scanner.failures.add(true);
