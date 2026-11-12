@@ -6,7 +6,7 @@
 - [Android] `minSdk` 20 → 21, as required by AppCompat 1.7. Flutter itself already requires a higher minimum.
 - Dependencies: [Android] `androidx.appcompat:appcompat` 1.6.1 → 1.7.1, `com.google.zxing:core` 3.5.2 → 3.5.4; standalone build classpath AGP 8.1.0 → 9.3.1, Gradle wrapper 8.9 → 9.5.0.
 - Example app: AGP 9.3.1 and Gradle 9.5.0 (Flutter 3.50 refuses older ones). Removed the deprecated `buildconfig`, `nonFinalResIds` and Jetifier options, and moved the example to `material_ui`.
-- Tooling: Flutter 3.50.0 in `.tool-versions` and CI. CI now uses `actions/checkout@v7` and `setup-java@v6` with Java 17. The iOS plugin-registration test's fake registrar implements `engineIdentifier`, which Flutter 3.50 requires.
+- Tooling: Flutter 3.50.0 in `.tool-versions` and CI. CI now uses `actions/checkout@v7` and `setup-java@v6` with Java 17. The iOS plugin-registration test's fake registrar implements `engineIdentifier`, which Flutter 3.50 requires. The iOS CI job timeout is 25 minutes (15 was too tight with slower macOS runners).
 
 ## 2.3.2
 
