@@ -1,3 +1,7 @@
+## Unreleased
+
+- Tooling: CI builds the example's release APK. The example no longer tracks the generated `ios/Flutter/ephemeral` files, which held machine-local paths; they're ignored now. The package code is unchanged.
+
 ## 2.3.3
 
 - Builds cleanly on Flutter 3.50 (`flutter analyze` reported deprecations as failures). The library imports `package:flutter/widgets.dart` instead of the deprecated `package:flutter/material.dart`; only the web view still uses Material's `CircularProgressIndicator`. The minimum Dart/Flutter versions are unchanged.

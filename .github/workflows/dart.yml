@@ -25,3 +25,6 @@ jobs:
         run: dart format --set-exit-if-changed .
       - name: Linter
         run: flutter analyze
+      - name: Build example release APK
+        working-directory: example
+        run: flutter build apk --release
