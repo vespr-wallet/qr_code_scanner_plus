@@ -1,4 +1,6 @@
-// ignore_for_file: avoid_web_libraries_in_flutter
+// The loading indicator is Material's CircularProgressIndicator. Moving to
+// material_ui would raise the plugin's minimum Flutter version.
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 
 import 'dart:async';
 import 'dart:core';

@@ -1,3 +1,13 @@
+## 2.3.3
+
+- Builds cleanly on Flutter 3.50 (`flutter analyze` reported deprecations as failures). The library imports `package:flutter/widgets.dart` instead of the deprecated `package:flutter/material.dart`; only the web view still uses Material's `CircularProgressIndicator`. The minimum Dart/Flutter versions are unchanged.
+- `QrScannerOverlayShape.borderColor` defaults to `Color(0xFFF44336)`, the same value as `Colors.red`, without depending on Material. It is now a plain `Color` rather than a `MaterialColor`.
+- [Android] `android/build.gradle` uses Gradle's `prop = value` assignment syntax (the space form is removed in Gradle 10) and an unconditional `namespace`. It drops the library-irrelevant `targetSdkVersion`, `multiDexEnabled` and `testInstrumentationRunner`, and uses the plugin's own `allprojects` instead of editing the root project. The plugin works with apps on AGP 9 with built-in Kotlin on or off.
+- [Android] `minSdk` 20 → 21, as required by AppCompat 1.7. Flutter itself already requires a higher minimum.
+- Dependencies: [Android] `androidx.appcompat:appcompat` 1.6.1 → 1.7.1, `com.google.zxing:core` 3.5.2 → 3.5.4; standalone build classpath AGP 8.1.0 → 9.3.1, Gradle wrapper 8.9 → 9.5.0.
+- Example app: AGP 9.3.1 and Gradle 9.5.0 (Flutter 3.50 refuses older ones). Removed the deprecated `buildconfig`, `nonFinalResIds` and Jetifier options, and moved the example to `material_ui`.
+- Tooling: Flutter 3.50.0 in `.tool-versions` and CI. CI now uses `actions/checkout@v7` and `setup-java@v6` with Java 17. The iOS plugin-registration test's fake registrar implements `engineIdentifier`, which Flutter 3.50 requires. The iOS CI job timeout is 25 minutes (15 was too tight with slower macOS runners).
+
 ## 2.3.2
 
 - [Android] Use continuous autofocus for the scanner preview. zxing's default focuses once and retries every two seconds, so codes moved closer stayed blurred until the next cycle (#35).

@@ -25,9 +25,9 @@ on:
 jobs:
   orientation:
     runs-on: macos-15
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Boot an iOS simulator
         id: simulator
         run: |
@@ -45,6 +45,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.50.0
           cache: true
       - name: Run plugin registration regression tests
         env:

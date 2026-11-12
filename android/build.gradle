@@ -1,5 +1,5 @@
-group 'net.touchcapture.qr.flutterqrplus'
-version '1.0-SNAPSHOT'
+group = 'net.touchcapture.qr.flutterqrplus'
+version = '1.0-SNAPSHOT'
 
 buildscript {
     repositories {
@@ -8,50 +8,42 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.0'
+        classpath 'com.android.tools.build:gradle:9.3.1'
     }
 }
 
-rootProject.allprojects {
+allprojects {
     repositories {
         google()
         mavenCentral()
     }
 }
 
+// Kotlin comes from AGP's built-in Kotlin support, or from the Kotlin Android
+// plugin that the Flutter Gradle plugin applies when an app turns that off.
 apply plugin: 'com.android.library'
 
 android {
-    compileSdk 36
+    namespace = 'net.touchcapture.qr.flutterqrplus'
+    compileSdk = 36
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
     defaultConfig {
-        // minSdkVersion is determined by Native View.
-        minSdkVersion 20
-        targetSdkVersion 36
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        multiDexEnabled true
+        minSdk = 21
     }
 
     compileOptions {
-        // Flag to enable support for the new language APIs
-        // // // coreLibraryDesugaringEnabled true
-        // Sets Java compatibility to Java 17
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-    if (project.android.hasProperty('namespace')) {
-        namespace 'net.touchcapture.qr.flutterqrplus'
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
 dependencies {
     implementation('com.journeyapps:zxing-android-embedded:4.3.0') { transitive = false }
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.zxing:core:3.5.2'
-    // // // coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.zxing:core:3.5.4'
 }
 
 kotlin {

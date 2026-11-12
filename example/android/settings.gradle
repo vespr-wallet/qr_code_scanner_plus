@@ -21,13 +21,7 @@ plugins {
 
     // https://developer.android.com/studio/releases/gradle-plugin#updating-gradle
     // AGP (gradle plugin)
-    id "com.android.application" version '8.13.0' apply false
-
-    // Kotlin Version
-    // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.android
-    id "org.jetbrains.kotlin.android" version "2.2.20" apply false
-
-    
+    id "com.android.application" version '9.3.1' apply false
 }
 
 include ":app"
