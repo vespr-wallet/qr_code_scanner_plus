@@ -11,6 +11,7 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.ResultPoint
 import com.journeyapps.barcodescanner.BarcodeCallback
 import com.journeyapps.barcodescanner.BarcodeResult
+import com.journeyapps.barcodescanner.CameraPreview
 import com.journeyapps.barcodescanner.DefaultDecoderFactory
 import com.journeyapps.barcodescanner.camera.CameraSettings
 import io.flutter.plugin.common.BinaryMessenger
@@ -124,6 +125,8 @@ class QRView(
             if (params[PARAMS_CAMERA_FACING] as Int == 1) {
                 barcodeView.cameraSettings?.requestedCameraId = cameraFacingFront
             }
+
+            barcodeView.addStateListener(cameraStateListener)
         } else if (!isPaused) {
             barcodeView.resume()
         }
@@ -232,15 +235,17 @@ class QRView(
     private fun startScan(arguments: List<Int>?, result: MethodChannel.Result) {
         checkAndRequestPermission()
 
-        val allowedBarcodeTypes = getAllowedBarcodeTypes(arguments, result)
+        val barcodeView = barcodeView ?: return barCodeViewNotSet(result)
+
+        val allowedBarcodeTypes = getAllowedBarcodeTypes(arguments)
 
         if (arguments == null) {
-            barcodeView?.decoderFactory = DefaultDecoderFactory(null, null, null, 2)
+            barcodeView.decoderFactory = DefaultDecoderFactory(null, null, null, 2)
         } else {
-            barcodeView?.decoderFactory = DefaultDecoderFactory(allowedBarcodeTypes, null, null, 2)
+            barcodeView.decoderFactory = DefaultDecoderFactory(allowedBarcodeTypes, null, null, 2)
         }
 
-        barcodeView?.decodeContinuous(
+        barcodeView.decodeContinuous(
             object : BarcodeCallback {
                 override fun barcodeResult(result: BarcodeResult) {
                     if (allowedBarcodeTypes.isEmpty() || allowedBarcodeTypes.contains(result.barcodeFormat)) {
@@ -257,6 +262,37 @@ class QRView(
                 override fun possibleResultPoints(resultPoints: List<ResultPoint>) = Unit
             }
         )
+
+        // zxing pauses the preview when the camera fails to open, so starting again
+        // (a retry from the Dart side) has to resume it. The camera opens asynchronously:
+        // a failure arrives later through cameraStateListener as onCameraError.
+        if (hasCameraPermission && !isPaused && !barcodeView.isPreviewActive) {
+            barcodeView.resume()
+        }
+
+        result.success(null)
+    }
+
+    private val cameraStateListener = object : CameraPreview.StateListener {
+        override fun previewSized() = Unit
+
+        override fun previewStarted() {
+            channel.invokeMethod(CHANNEL_METHOD_ON_CAMERA_STARTED, null)
+        }
+
+        override fun previewStopped() = Unit
+
+        override fun cameraError(error: Exception) {
+            // Without the permission the camera can't open; that is reported through
+            // onPermissionSet, and the camera starts once the permission is granted.
+            if (!hasCameraPermission) return
+            channel.invokeMethod(
+                CHANNEL_METHOD_ON_CAMERA_ERROR,
+                error.message ?: error.javaClass.simpleName
+            )
+        }
+
+        override fun cameraClosed() = Unit
     }
 
     private fun stopScan() {
@@ -342,17 +378,14 @@ class QRView(
 
     // region barcode common
 
-    private fun getAllowedBarcodeTypes(
-        arguments: List<Int>?,
-        result: MethodChannel.Result
-    ): List<BarcodeFormat> {
+    // An unknown format index falls back to scanning every format, as before; it is not a
+    // start failure (replying with an error here and success later would reply twice).
+    private fun getAllowedBarcodeTypes(arguments: List<Int>?): List<BarcodeFormat> {
         return try {
             arguments?.map {
                 BarcodeFormat.values()[it]
             }.orEmpty()
         } catch (e: Exception) {
-            result.error("", e.message, null)
-
             emptyList()
         }
     }
@@ -377,6 +410,8 @@ class QRView(
     companion object {
         private const val CHANNEL_METHOD_ON_PERMISSION_SET = "onPermissionSet"
         private const val CHANNEL_METHOD_ON_RECOGNIZE_QR = "onRecognizeQR"
+        private const val CHANNEL_METHOD_ON_CAMERA_ERROR = "onCameraError"
+        private const val CHANNEL_METHOD_ON_CAMERA_STARTED = "onCameraStarted"
 
         private const val PARAMS_CAMERA_FACING = "cameraFacing"
 

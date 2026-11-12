@@ -152,86 +152,100 @@ public class QRView:NSObject,FlutterPlatformView {
             allowedBarcodeTypes.append( QRCodeTypes[arg]!)
         }
         NativeBarcodeScanner.requestCameraPermission { [weak self] permissionGranted in
-            guard let self = self else { return }
+            guard let self = self else {
+                result(FlutterError(code: "disposed", message: "The scanner view was disposed", details: nil))
+                return
+            }
 
             self.channel.invokeMethod("onPermissionSet", arguments: permissionGranted)
 
-            if permissionGranted {
-                do {
-                    self.scanner?.onCodesDetected = { [weak self] codes in
-                        for code in codes {
-                            var typeString: String;
-                            switch(code.type) {
-                                case AVMetadataObject.ObjectType.aztec:
-                                   typeString = "AZTEC"
-                                case AVMetadataObject.ObjectType.code39:
-                                    typeString = "CODE_39"
-                                case AVMetadataObject.ObjectType.code93:
-                                    typeString = "CODE_93"
-                                case AVMetadataObject.ObjectType.code128:
-                                    typeString = "CODE_128"
-                                case AVMetadataObject.ObjectType.dataMatrix:
-                                    typeString = "DATA_MATRIX"
-                                case AVMetadataObject.ObjectType.ean8:
-                                    typeString = "EAN_8"
-                                case AVMetadataObject.ObjectType.ean13:
-                                    typeString = "EAN_13"
-                                case AVMetadataObject.ObjectType.itf14,
-                                     AVMetadataObject.ObjectType.interleaved2of5:
-                                    typeString = "ITF"
-                                case AVMetadataObject.ObjectType.pdf417:
-                                    typeString = "PDF_417"
-                                case AVMetadataObject.ObjectType.qr:
-                                    typeString = "QR_CODE"
-                                case AVMetadataObject.ObjectType.upce:
-                                    typeString = "UPC_E"
+            // A denied permission is reported through onPermissionSet, not as a start failure.
+            guard permissionGranted else {
+                result(nil)
+                return
+            }
+            // setDimensions creates the scanner; without it there is nothing to start.
+            guard let scanner = self.scanner else {
+                result(FlutterError(code: "not-ready", message: "The scanner view is not ready", details: nil))
+                return
+            }
+            do {
+                scanner.onCodesDetected = { [weak self] codes in
+                    for code in codes {
+                        var typeString: String;
+                        switch(code.type) {
+                            case AVMetadataObject.ObjectType.aztec:
+                               typeString = "AZTEC"
+                            case AVMetadataObject.ObjectType.code39:
+                                typeString = "CODE_39"
+                            case AVMetadataObject.ObjectType.code93:
+                                typeString = "CODE_93"
+                            case AVMetadataObject.ObjectType.code128:
+                                typeString = "CODE_128"
+                            case AVMetadataObject.ObjectType.dataMatrix:
+                                typeString = "DATA_MATRIX"
+                            case AVMetadataObject.ObjectType.ean8:
+                                typeString = "EAN_8"
+                            case AVMetadataObject.ObjectType.ean13:
+                                typeString = "EAN_13"
+                            case AVMetadataObject.ObjectType.itf14,
+                                 AVMetadataObject.ObjectType.interleaved2of5:
+                                typeString = "ITF"
+                            case AVMetadataObject.ObjectType.pdf417:
+                                typeString = "PDF_417"
+                            case AVMetadataObject.ObjectType.qr:
+                                typeString = "QR_CODE"
+                            case AVMetadataObject.ObjectType.upce:
+                                typeString = "UPC_E"
+                            default:
+                                return
+                        }
+                        let bytes = { () -> Data? in
+                            if #available(iOS 11.0, *) {
+                                switch (code.descriptor) {
+                                case let qrDescriptor as CIQRCodeDescriptor:
+                                    return qrDescriptor.errorCorrectedPayload
+                                case let aztecDescriptor as CIAztecCodeDescriptor:
+                                    return aztecDescriptor.errorCorrectedPayload
+                                case let pdf417Descriptor as CIPDF417CodeDescriptor:
+                                    return pdf417Descriptor.errorCorrectedPayload
+                                case let dataMatrixDescriptor as CIDataMatrixCodeDescriptor:
+                                    return dataMatrixDescriptor.errorCorrectedPayload
                                 default:
-                                    return
-                            }
-                            let bytes = { () -> Data? in
-                                if #available(iOS 11.0, *) {
-                                    switch (code.descriptor) {
-                                    case let qrDescriptor as CIQRCodeDescriptor:
-                                        return qrDescriptor.errorCorrectedPayload
-                                    case let aztecDescriptor as CIAztecCodeDescriptor:
-                                        return aztecDescriptor.errorCorrectedPayload
-                                    case let pdf417Descriptor as CIPDF417CodeDescriptor:
-                                        return pdf417Descriptor.errorCorrectedPayload
-                                    case let dataMatrixDescriptor as CIDataMatrixCodeDescriptor:
-                                        return dataMatrixDescriptor.errorCorrectedPayload
-                                    default:
-                                        return nil
-                                    }
-                                } else {
                                     return nil
                                 }
-                            }()
-                            let result = { () -> [String : Any]? in
-                                guard let stringValue = code.stringValue else {
-                                    guard let safeBytes = bytes else {
-                                        return nil
-                                    }
-                                    return ["type": typeString, "rawBytes": safeBytes]
-                                }
-                                guard let safeBytes = bytes else {
-                                    return ["code": stringValue, "type": typeString]
-                                }
-                                return ["code": stringValue, "type": typeString, "rawBytes": safeBytes]
-                            }()
-                            guard result != nil else { continue }
-                            if allowedBarcodeTypes.count == 0 || allowedBarcodeTypes.contains(code.type) {
-                                self?.channel.invokeMethod("onRecognizeQR", arguments: result)
+                            } else {
+                                return nil
                             }
-
+                        }()
+                        let result = { () -> [String : Any]? in
+                            guard let stringValue = code.stringValue else {
+                                guard let safeBytes = bytes else {
+                                    return nil
+                                }
+                                return ["type": typeString, "rawBytes": safeBytes]
+                            }
+                            guard let safeBytes = bytes else {
+                                return ["code": stringValue, "type": typeString]
+                            }
+                            return ["code": stringValue, "type": typeString, "rawBytes": safeBytes]
+                        }()
+                        guard result != nil else { continue }
+                        if allowedBarcodeTypes.count == 0 || allowedBarcodeTypes.contains(code.type) {
+                            self?.channel.invokeMethod("onRecognizeQR", arguments: result)
                         }
+
                     }
-                    try self.scanner?.startScanning()
-                } catch {
-                    // Convert Swift Error to String (localizedDescription) to avoid EXC_CRASH (SIGABRT)
-                    // since FlutterStandardMethodCodec only supports primitive types and cannot serialize raw Error/NSError objects.
-                    let scanError = FlutterError(code: "unknown-error", message: "Unable to start scanning", details: error.localizedDescription)
-                    result(scanError)
                 }
+                try scanner.startScanning()
+                result(nil)
+            } catch {
+                // Release whatever the failed start set up, so a retry starts from scratch.
+                scanner.stopScanning()
+                // Convert Swift Error to String (localizedDescription) to avoid EXC_CRASH (SIGABRT)
+                // since FlutterStandardMethodCodec only supports primitive types and cannot serialize raw Error/NSError objects.
+                let scanError = FlutterError(code: "unknown-error", message: "Unable to start scanning", details: error.localizedDescription)
+                result(scanError)
             }
         }
     }
@@ -242,6 +256,7 @@ public class QRView:NSObject,FlutterPlatformView {
                 sc.stopScanning()
             }
         }
+        result(true)
     }
 
     func getCameraInfo(_ result: @escaping FlutterResult) {

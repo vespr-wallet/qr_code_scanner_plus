@@ -1,3 +1,12 @@
+## 2.4.0
+
+- `QRView` handles a camera that fails to start. It awaits the start, logs the failure and shows a short message with a Retry button inside the scan area (the overlay's cut-out, or the middle of the view without an overlay) instead of throwing an unhandled `CameraException` and leaving the preview blank. Retry starts the camera again.
+- New `QRView.cameraErrorMessage` and `QRView.cameraRetryLabel` parameters set that text, so apps can pass localized strings. The defaults are English: "Could not start the camera" and "Retry".
+- [iOS] `startScan` now completes on success and when the permission is denied (it only completed on failure, so it could not be awaited). A failed start releases what it set up, and starting before the view has its dimensions reports an error instead of doing nothing. `stopCamera` now completes as well.
+- [Android] A camera that fails to open (for example, in use by another app) is reported to `QRView`, which shows the same error state. A camera that starts later clears it. `startScan` now completes, and starting again resumes the preview zxing paused after the failure. An unknown barcode format index no longer replies with an error before scanning every format.
+- Disposing a `QRView` no longer surfaces an unhandled error when stopping the camera fails.
+- CI runs `flutter test`; the package has widget tests for the failure path.
+
 ## 2.3.3
 
 - Builds cleanly on Flutter 3.50 (`flutter analyze` reported deprecations as failures). The library imports `package:flutter/widgets.dart` instead of the deprecated `package:flutter/material.dart`; only the web view still uses Material's `CircularProgressIndicator`. The minimum Dart/Flutter versions are unchanged.
