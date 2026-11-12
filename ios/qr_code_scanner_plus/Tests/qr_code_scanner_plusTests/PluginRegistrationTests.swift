@@ -38,6 +38,8 @@ private final class RecordingRegistrar: NSObject, FlutterPluginRegistrar {
     var sceneDelegates: [FlutterSceneLifeCycleDelegate] = []
     var factories: [(factory: FlutterPlatformViewFactory, id: String)] = []
     var viewController: UIViewController? { nil }
+    // Required by FlutterBaseRegistrar since Flutter 3.50.
+    var engineIdentifier: Int64 { 0 }
 
     func addApplicationDelegate(_ delegate: FlutterPlugin) {
         applicationDelegates.append(delegate)

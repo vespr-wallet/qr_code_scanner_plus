@@ -27,32 +27,31 @@ if (flutterVersionName == null) {
 }
 
 android {
-    compileSdk 36
+    compileSdk = 36
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
     defaultConfig {
-        applicationId "net.touchcapture.qr.flutterqrexample"
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 36
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        applicationId = "net.touchcapture.qr.flutterqrexample"
+        minSdk = flutter.minSdkVersion
+        targetSdk = 36
+        versionCode = flutterVersionCode.toInteger()
+        versionName = flutterVersionName
     }
 
     buildTypes {
         release {
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig = signingConfigs.debug
         }
     }
-    namespace 'net.touchcapture.qr.flutterqrexample'
+    namespace = 'net.touchcapture.qr.flutterqrexample'
 }
 
 flutter {
-    source '../..'
+    source = '../..'
 }
 
 kotlin {

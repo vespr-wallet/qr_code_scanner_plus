@@ -1,10 +1,10 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 class QrScannerOverlayShape extends ShapeBorder {
   QrScannerOverlayShape({
-    this.borderColor = Colors.red,
+    this.borderColor = const Color(0xFFF44336),
     this.borderWidth = 3.0,
     this.overlayColor = const Color.fromRGBO(0, 0, 0, 0.5),
     this.borderRadius = 0,
