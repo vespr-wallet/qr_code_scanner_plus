@@ -1,6 +1,6 @@
 ## 2.4.1
 
-- [iOS] An unknown barcode format index passed to `startScan` reports an `unknown-barcode-format` error, which `QRView` shows as its camera error, instead of crashing on a force unwrap. Malformed `setDimensions` or `startScan` arguments report an `invalid-arguments` error, and missing creation parameters fall back to the back camera, instead of crashing on forced casts.
+- [iOS] An unknown barcode format index passed to `startScan` scans every format, as on Android, instead of crashing on a force unwrap. Malformed `setDimensions` or `startScan` arguments report an `invalid-arguments` error, and missing creation parameters fall back to the back camera, instead of crashing on forced casts.
 - `QRView` works with any kind of key. It no longer casts its key to a `GlobalKey` (which threw for a `ValueKey` or `UniqueKey`): iOS now reads the view size through a key of its own.
 - Malformed native messages (`onRecognizeQR`, `onCameraError`) no longer throw cast errors. Fields of the wrong type are treated as missing.
 - Web: the view no longer relies on null assertions; `onPlatformViewCreated` now fires before the camera lookup, so `onPermissionSet` always has a controller when the camera is denied or fails.

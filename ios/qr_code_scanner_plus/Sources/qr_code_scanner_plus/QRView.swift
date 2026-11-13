@@ -153,15 +153,9 @@ public class QRView:NSObject,FlutterPlatformView {
     }
 
     func startScan(_ arguments: Array<Int>, _ result: @escaping FlutterResult) {
-        // Check for allowed barcodes
-        var allowedBarcodeTypes: Array<AVMetadataObject.ObjectType> = []
-        for arg in arguments {
-            guard let type = QRCodeTypes[arg] else {
-                result(FlutterError(code: "unknown-barcode-format", message: "Unknown barcode format index \(arg)", details: nil))
-                return
-            }
-            allowedBarcodeTypes.append(type)
-        }
+        // An empty list scans every format. Like Android, an unknown format index also scans every format.
+        let knownTypes = arguments.compactMap { QRCodeTypes[$0] }
+        let allowedBarcodeTypes = knownTypes.count == arguments.count ? knownTypes : []
         NativeBarcodeScanner.requestCameraPermission { [weak self] permissionGranted in
             guard let self = self else {
                 result(FlutterError(code: "disposed", message: "The scanner view was disposed", details: nil))
