@@ -106,7 +106,7 @@ class _QRViewState extends State<QRView> {
         child: Stack(
           fit: StackFit.passthrough,
           children: [
-            _getPlatformQrView(),
+            KeyedSubtree(key: _sizeKey, child: _getPlatformQrView()),
             if (cameraError != null)
               // Opaque, so nothing the app draws under the scanner (such as a
               // loading indicator) shows through: without a camera frame the
@@ -150,17 +150,15 @@ class _QRViewState extends State<QRView> {
     controller?._disposeImpl();
   }
 
-  /// iOS reads the view's size through its [GlobalKey].
-  GlobalKey? get _globalKey => switch (widget.key) {
-    final GlobalKey key => key,
-    _ => null,
-  };
+  /// iOS reads the view's size through this key, so [QRView.key] can be any
+  /// kind of key.
+  final GlobalKey _sizeKey = GlobalKey(debugLabel: 'QRView size');
 
   Future<void> updateDimensions() async {
     final channel = _channel;
     if (channel == null) return;
     await QRViewController.updateDimensions(
-      _globalKey,
+      _sizeKey,
       channel,
       overlay: widget.overlay,
     );
@@ -243,7 +241,7 @@ class _QRViewState extends State<QRView> {
   Future<void> _startCamera(QRViewController controller) async {
     try {
       await controller._startScan(
-        _globalKey,
+        _sizeKey,
         widget.overlay,
         widget.formatsAllowed,
       );
@@ -464,7 +462,7 @@ class QRViewController {
 
   /// Starts the barcode scanner
   Future<void> _startScan(
-    GlobalKey? key,
+    GlobalKey key,
     QrScannerOverlayShape? overlay,
     List<BarcodeFormat>? barcodeFormats,
   ) async {
@@ -630,14 +628,14 @@ class QRViewController {
 
   /// Updates the view dimensions for iOS.
   static Future<bool> updateDimensions(
-    GlobalKey? key,
+    GlobalKey key,
     MethodChannel channel, {
     QrScannerOverlayShape? overlay,
   }) async {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       // Add small delay to ensure the render box is loaded
       await Future.delayed(const Duration(milliseconds: 300));
-      final renderBox = key?.currentContext?.findRenderObject();
+      final renderBox = key.currentContext?.findRenderObject();
       if (renderBox is! RenderBox) return false;
       try {
         await channel.invokeMethod('setDimensions', {

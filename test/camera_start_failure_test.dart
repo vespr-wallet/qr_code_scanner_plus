@@ -293,8 +293,8 @@ void main() {
     expect(tester.takeException(), isNull);
   }, variant: _ios);
 
-  testWidgets('a key that is not a GlobalKey skips the iOS size update '
-      'instead of throwing', (tester) async {
+  testWidgets('with a key that is not a GlobalKey, iOS still gets the view '
+      'size before the camera starts', (tester) async {
     final scanner = _FakeScanner(tester)..install();
 
     await tester.pumpWidget(
@@ -303,8 +303,8 @@ void main() {
     await _settleStart(tester);
 
     expect(tester.takeException(), isNull);
-    expect(scanner.calls, isNot(contains('setDimensions')));
-    expect(scanner.startScanCount, 1);
+    expect(scanner.calls, containsAllInOrder(['setDimensions', 'startScan']));
+    expect(find.text('Could not start the camera'), findsNothing);
   }, variant: _ios);
 
   testWidgets('malformed native messages do not throw', (tester) async {
