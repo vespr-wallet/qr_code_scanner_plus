@@ -2,6 +2,7 @@ name: iOS tests
 
 on:
   push:
+    branches: [master]
     paths:
       - 'ios/**'
       - 'lib/**'
@@ -22,9 +23,18 @@ on:
       - 'tool/test_ios.sh'
       - '.github/workflows/ios.yml'
 
+# One run per PR: branches get only the pull_request run, and a new push to a
+# PR cancels its stale run. Pushes to master always run to completion.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   orientation:
-    runs-on: macos-15
+    # ponytail: Intel (x64) runner because GitHub's arm64 macOS pool is starved
+    # (jobs are cancelled without ever getting a runner). Move back to macos-15
+    # (arm64) once capacity recovers, or before macos-15-intel is retired (~Aug 2027).
+    runs-on: macos-15-intel
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
