@@ -1,6 +1,7 @@
 ## Unreleased
 
 - Tooling: CI builds the example's release APK. The example no longer tracks the generated `ios/Flutter/ephemeral` files, which held machine-local paths; they're ignored now. The package code is unchanged.
+- Tooling: CI runs once per PR. Pushes trigger CI only on `master`, and a new push to a PR cancels its stale run, which halves macOS runner use for the iOS tests. The iOS tests run on the `macos-15-intel` runner while the arm64 macOS pool is starved.
 
 ## 2.3.3
 
