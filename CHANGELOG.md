@@ -1,3 +1,7 @@
+## Unreleased
+
+- Tooling: the iOS CI job gets 45 minutes instead of 25, because the `macos-15-intel` runner takes 22 to 30 minutes for it.
+
 ## 2.4.0
 
 - `QRView` handles a camera that fails to start. Instead of throwing an unhandled `CameraException` and leaving the preview blank, it awaits the start, logs the failure and shows a short message with a Retry button inside the scan area (the overlay's cut-out, or the middle of the view without an overlay), framed by the overlay's border. Retry starts the camera again. The error covers the whole view in opaque black, so nothing the app draws under the scanner (such as a loading indicator) shows through.
