@@ -1,3 +1,10 @@
+## 2.4.1
+
+- [iOS] An unknown barcode format index passed to `startScan` reports an `unknown-barcode-format` error, which `QRView` shows as its camera error, instead of crashing on a force unwrap. Malformed `setDimensions` or `startScan` arguments report an `invalid-arguments` error, and missing creation parameters fall back to the back camera, instead of crashing on forced casts.
+- `QRView` no longer throws when its key is not a `GlobalKey`: iOS skips the size update it reads through the key. `QRViewController.updateDimensions` accepts a nullable key.
+- Malformed native messages (`onRecognizeQR`, `onCameraError`) no longer throw cast errors. Fields of the wrong type are treated as missing.
+- Web: the view no longer relies on null assertions; `onPlatformViewCreated` now fires before the camera lookup, so `onPermissionSet` always has a controller when the camera is denied or fails.
+
 ## 2.4.0
 
 - `QRView` handles a camera that fails to start. Instead of throwing an unhandled `CameraException` and leaving the preview blank, it awaits the start, logs the failure and shows a short message with a Retry button inside the scan area (the overlay's cut-out, or the middle of the view without an overlay), framed by the overlay's border. Retry starts the camera again. The error covers the whole view in opaque black, so nothing the app draws under the scanner (such as a loading indicator) shows through.

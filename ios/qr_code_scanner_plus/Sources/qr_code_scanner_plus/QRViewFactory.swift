@@ -10,16 +10,16 @@ import Flutter
 
 public class QRViewFactory: NSObject, FlutterPlatformViewFactory {
 
-    var registrar: FlutterPluginRegistrar?
+    let registrar: FlutterPluginRegistrar
 
     public init(withRegistrar registrar: FlutterPluginRegistrar){
-        super.init()
         self.registrar = registrar
+        super.init()
     }
 
     public func create(withFrame frame: CGRect, viewIdentifier viewId: Int64, arguments args: Any?) -> FlutterPlatformView {
-        let params = args as! Dictionary<String, Double>
-        return QRView(withFrame: frame, withRegistrar: registrar!,withId: viewId, params: params)
+        let params = args as? Dictionary<String, Any> ?? [:]
+        return QRView(withFrame: frame, withRegistrar: registrar, withId: viewId, params: params)
     }
 
     public func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {

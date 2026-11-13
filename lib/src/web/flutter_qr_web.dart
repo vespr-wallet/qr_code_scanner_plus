@@ -8,6 +8,7 @@ import 'dart:developer';
 // import 'dart:html' as html;
 import 'dart:js_interop';
 import 'dart:ui_web' as ui_web;
+
 import 'package:web/web.dart' as web;
 
 import 'package:flutter/material.dart';
@@ -101,10 +102,8 @@ class _WebQrViewState extends State<WebQrView> {
   }
 
   void cancel() {
-    if (timer != null) {
-      timer!.cancel();
-      timer = null;
-    }
+    timer?.cancel();
+    timer = null;
     if (_currentlyProcessing) {
       _stopStream();
     }
@@ -121,6 +120,12 @@ class _WebQrViewState extends State<WebQrView> {
   Future<void> _makeCall() async {
     if (_localStream != null) {
       return;
+    }
+
+    final controller = _controller ?? QRViewControllerWeb._(this);
+    if (_controller == null) {
+      _controller = controller;
+      widget.onPlatformViewCreated(controller);
     }
 
     try {
@@ -167,12 +172,8 @@ class _WebQrViewState extends State<WebQrView> {
           );
       }
 
-      if (_controller == null) {
-        _controller = QRViewControllerWeb._(this);
-        widget.onPlatformViewCreated(_controller!);
-      }
       var stream = await getUserMedia(constraints).toDart;
-      widget.onPermissionSet?.call(_controller!, true);
+      widget.onPermissionSet?.call(controller, true);
       _localStream = stream;
       video.srcObject = _localStream;
       video.setAttribute(
@@ -183,7 +184,7 @@ class _WebQrViewState extends State<WebQrView> {
     } catch (e) {
       cancel();
       if (e.toString().contains("NotAllowedError")) {
-        widget.onPermissionSet?.call(_controller!, false);
+        widget.onPermissionSet?.call(controller, false);
       }
       setState(() {
         _errorMsg = e.toString();
@@ -200,7 +201,9 @@ class _WebQrViewState extends State<WebQrView> {
   Future<void> _stopStream() async {
     try {
       // await _localStream.dispose();
-      _localStream!.getTracks().toDart.forEach((track) {
+      final stream = _localStream;
+      if (stream == null) return;
+      stream.getTracks().toDart.forEach((track) {
         if (track.readyState == 'live') {
           track.stop();
         }
@@ -245,8 +248,9 @@ class _WebQrViewState extends State<WebQrView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_errorMsg != null) {
-      return Center(child: Text(_errorMsg!));
+    final errorMsg = _errorMsg;
+    if (errorMsg != null) {
+      return Center(child: Text(errorMsg));
     }
     if (_localStream == null) {
       return const Center(child: CircularProgressIndicator());

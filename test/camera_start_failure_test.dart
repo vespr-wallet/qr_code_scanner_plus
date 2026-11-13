@@ -292,4 +292,48 @@ void main() {
 
     expect(tester.takeException(), isNull);
   }, variant: _ios);
+
+  testWidgets('a key that is not a GlobalKey skips the iOS size update '
+      'instead of throwing', (tester) async {
+    final scanner = _FakeScanner(tester)..install();
+
+    await tester.pumpWidget(
+      _app(QRView(key: const ValueKey('qr'), onQRViewCreated: (_) {})),
+    );
+    await _settleStart(tester);
+
+    expect(tester.takeException(), isNull);
+    expect(scanner.calls, isNot(contains('setDimensions')));
+    expect(scanner.startScanCount, 1);
+  }, variant: _ios);
+
+  testWidgets('malformed native messages do not throw', (tester) async {
+    final scanner = _FakeScanner(tester)..install();
+    final scanned = <Barcode>[];
+
+    await tester.pumpWidget(
+      _app(
+        QRView(
+          key: GlobalKey(),
+          onQRViewCreated: (c) => c.scannedDataStream.listen(scanned.add),
+        ),
+      ),
+    );
+    await _settleStart(tester);
+
+    await scanner.sendFromNative('onCameraError', 42);
+    await tester.pump();
+    expect(find.text('Could not start the camera'), findsOneWidget);
+
+    await scanner.sendFromNative('onRecognizeQR', {
+      'code': 7,
+      'type': 'QR_CODE',
+      'rawBytes': 'x',
+    });
+    await tester.pump();
+    expect(scanned.single.format, BarcodeFormat.qrcode);
+    expect(scanned.single.code, isNull);
+    expect(scanned.single.rawBytes, isNull);
+    expect(tester.takeException(), isNull);
+  }, variant: _ios);
 }
