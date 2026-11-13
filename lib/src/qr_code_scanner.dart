@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:math' show min;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -39,6 +40,8 @@ class QRView extends StatefulWidget {
     this.cameraFacing = CameraFacing.back,
     this.onPermissionSet,
     this.formatsAllowed = const <BarcodeFormat>[],
+    this.cameraErrorMessage = 'Could not start the camera',
+    this.cameraRetryLabel = 'Retry',
   }) : super(key: key);
 
   /// [onQRViewCreated] gets called when the view is created
@@ -63,6 +66,17 @@ class QRView extends StatefulWidget {
   /// Use [formatsAllowed] to specify which formats needs to be scanned.
   final List<BarcodeFormat> formatsAllowed;
 
+  /// Shown inside the scan area when the camera fails to start, above a
+  /// button labelled [cameraRetryLabel] that starts it again.
+  ///
+  /// Pass localized text here; the default is English.
+  final String cameraErrorMessage;
+
+  /// Label of the button that restarts the camera after it failed to start.
+  ///
+  /// Pass localized text here; the default is English.
+  final String cameraRetryLabel;
+
   @override
   State<StatefulWidget> createState() => _QRViewState();
 }
@@ -71,6 +85,9 @@ class _QRViewState extends State<QRView> {
   MethodChannel? _channel;
   QRViewController? controller;
   late LifecycleEventHandler _observer;
+
+  /// Set when the camera failed to start; cleared by a retry or a later start.
+  CameraException? _cameraError;
 
   @override
   void initState() {
@@ -81,12 +98,47 @@ class _QRViewState extends State<QRView> {
 
   @override
   Widget build(BuildContext context) {
+    final cameraError = _cameraError;
+    final overlay = widget.overlay;
     return NotificationListener(
       onNotification: onNotification,
       child: SizeChangedLayoutNotifier(
-        child: (widget.overlay != null)
-            ? _getPlatformQrViewWithOverlay()
-            : _getPlatformQrView(),
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            _getPlatformQrView(),
+            if (cameraError != null)
+              // Opaque, so nothing the app draws under the scanner (such as a
+              // loading indicator) shows through: without a camera frame the
+              // platform view is transparent.
+              Positioned.fill(
+                child: ColoredBox(
+                  color: const Color(0xFF000000),
+                  child: _CameraErrorView(
+                    overlay: overlay,
+                    overlayMargin: widget.overlayMargin,
+                    message: widget.cameraErrorMessage,
+                    retryLabel: widget.cameraRetryLabel,
+                    onRetry: _retryCamera,
+                  ),
+                ),
+              ),
+            // The overlay stays on top so its border frames the error too, but
+            // it must not take the Retry button's taps.
+            if (overlay != null)
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: cameraError != null,
+                  child: Padding(
+                    padding: widget.overlayMargin,
+                    child: Container(
+                      decoration: ShapeDecoration(shape: overlay),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -110,18 +162,6 @@ class _QRViewState extends State<QRView> {
   bool onNotification(Notification notification) {
     updateDimensions();
     return false;
-  }
-
-  Widget _getPlatformQrViewWithOverlay() {
-    return Stack(
-      children: [
-        _getPlatformQrView(),
-        Padding(
-          padding: widget.overlayMargin,
-          child: Container(decoration: ShapeDecoration(shape: widget.overlay!)),
-        ),
-      ],
-    );
   }
 
   Widget _getPlatformQrView() {
@@ -164,27 +204,179 @@ class _QRViewState extends State<QRView> {
       return;
     }
 
-    _channel = MethodChannel('net.touchcapture.qr.flutterqrplus/qrview_$id');
+    final channel = MethodChannel(
+      'net.touchcapture.qr.flutterqrplus/qrview_$id',
+    );
+    _channel = channel;
 
-    // Start scan after creation of the view
-    final newController =
-        QRViewController._(
-          _channel!,
-          widget.key as GlobalKey<State<StatefulWidget>>?,
-          widget.onPermissionSet,
-          widget.cameraFacing,
-        ).._startScan(
-          widget.key as GlobalKey<State<StatefulWidget>>,
-          widget.overlay,
-          widget.formatsAllowed,
-        );
+    final newController = QRViewController._(
+      channel,
+      widget.key as GlobalKey<State<StatefulWidget>>?,
+      widget.onPermissionSet,
+      widget.cameraFacing,
+    );
+    newController._onCameraError = (error) {
+      _showCameraError(newController, error);
+    };
+    newController._onCameraStarted = () => _clearCameraError(newController);
 
     // Dispose the previous controller if it exists
     controller?._disposeImpl();
     controller = newController;
+    if (_cameraError != null) setState(() => _cameraError = null);
+
+    // Start scan after creation of the view
+    unawaited(_startCamera(newController));
 
     // Initialize the controller for controlling the QRView
     widget.onQRViewCreated(newController);
+  }
+
+  /// Starts the camera and shows the error state when it fails, instead of
+  /// leaving an unhandled [CameraException] and a blank preview.
+  Future<void> _startCamera(QRViewController controller) async {
+    try {
+      await controller._startScan(
+        widget.key as GlobalKey<State<StatefulWidget>>,
+        widget.overlay,
+        widget.formatsAllowed,
+      );
+    } on CameraException catch (error) {
+      _showCameraError(controller, error);
+    }
+  }
+
+  void _showCameraError(QRViewController controller, CameraException error) {
+    if (!mounted || controller != this.controller || controller.disposed) {
+      return;
+    }
+    log(
+      'Camera failed to start: $error',
+      name: 'qr_code_scanner_plus',
+      level: 900, // warning
+    );
+    setState(() => _cameraError = error);
+  }
+
+  void _clearCameraError(QRViewController controller) {
+    if (!mounted || controller != this.controller || _cameraError == null) {
+      return;
+    }
+    setState(() => _cameraError = null);
+  }
+
+  void _retryCamera() {
+    final controller = this.controller;
+    if (controller == null || controller.disposed) return;
+    setState(() => _cameraError = null);
+    unawaited(_startCamera(controller));
+  }
+}
+
+/// The failed-camera message and its Retry button, centred in the overlay's
+/// cut-out (or in the whole view when there is no overlay).
+class _CameraErrorView extends StatelessWidget {
+  const _CameraErrorView({
+    required this.overlay,
+    required this.overlayMargin,
+    required this.message,
+    required this.retryLabel,
+    required this.onRetry,
+  });
+
+  final QrScannerOverlayShape? overlay;
+  final EdgeInsetsGeometry overlayMargin;
+  final String message;
+  final String retryLabel;
+  final VoidCallback onRetry;
+
+  static const _textColor = Color(0xFFFFFFFF);
+  static const _maxWidthWithoutOverlay = 320.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final overlay = this.overlay;
+    final content = Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: _textColor, fontSize: 15),
+          ),
+          const SizedBox(height: 12),
+          Semantics(
+            button: true,
+            child: GestureDetector(
+              onTap: onRetry,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 44, minWidth: 88),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(color: _textColor),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Text(
+                  retryLabel,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: _textColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Wrap the text at the available width and scale it down only when it
+    // still does not fit the height (a small cut-out or long translations).
+    Widget fitted(double width) => Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: SizedBox(width: width, child: content),
+      ),
+    );
+
+    if (overlay == null) {
+      return LayoutBuilder(
+        builder: (context, constraints) =>
+            fitted(min(constraints.maxWidth, _maxWidthWithoutOverlay)),
+      );
+    }
+
+    return Padding(
+      padding: overlayMargin,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Same cut-out geometry as QrScannerOverlayShape.paint.
+          final width = min(overlay.cutOutWidth, constraints.maxWidth);
+          final height = min(overlay.cutOutHeight, constraints.maxHeight);
+          return Stack(
+            children: [
+              Positioned(
+                left: (constraints.maxWidth - width) / 2,
+                top:
+                    (constraints.maxHeight - height) / 2 -
+                    overlay.cutOutBottomOffset,
+                width: width,
+                height: height,
+                child: fitted(width),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -224,6 +416,14 @@ class QRViewController {
             }
           }
           break;
+        case 'onCameraError':
+          _onCameraError?.call(
+            CameraException('cameraError', call.arguments as String?),
+          );
+          break;
+        case 'onCameraStarted':
+          _onCameraStarted?.call();
+          break;
         case 'onPermissionSet':
           if (call.arguments != null && call.arguments is bool) {
             _hasPermissions = call.arguments;
@@ -237,6 +437,10 @@ class QRViewController {
   }
   bool disposed = false;
   final MethodChannel _channel;
+
+  /// Set by the [QRView] that owns this controller.
+  void Function(CameraException error)? _onCameraError;
+  void Function()? _onCameraStarted;
   final CameraFacing _cameraFacing;
   final StreamController<Barcode> _scanUpdateController =
       StreamController<Barcode>();
@@ -396,7 +600,19 @@ class QRViewController {
       return;
     }
     disposed = true;
-    stopCamera();
+    _onCameraError = null;
+    _onCameraStarted = null;
+    // Nobody awaits this, so a failure (no scanner, or the native view is
+    // already gone) must not surface as an unhandled error.
+    unawaited(
+      stopCamera().catchError(
+        (Object error) => log(
+          'Could not stop the camera on dispose: $error',
+          name: 'qr_code_scanner_plus',
+          level: 900, // warning
+        ),
+      ),
+    );
     _scanUpdateController.close();
   }
 

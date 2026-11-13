@@ -1,6 +1,13 @@
-## Unreleased
+## 2.4.0
 
-- Tooling: CI builds the example's release APK. The example no longer tracks the generated `ios/Flutter/ephemeral` files, which held machine-local paths; they're ignored now. The package code is unchanged.
+- `QRView` handles a camera that fails to start. Instead of throwing an unhandled `CameraException` and leaving the preview blank, it awaits the start, logs the failure and shows a short message with a Retry button inside the scan area (the overlay's cut-out, or the middle of the view without an overlay), framed by the overlay's border. Retry starts the camera again. The error covers the whole view in opaque black, so nothing the app draws under the scanner (such as a loading indicator) shows through.
+- New `QRView.cameraErrorMessage` and `QRView.cameraRetryLabel` parameters set that text, so apps can pass localized strings. The defaults are English: "Could not start the camera" and "Retry".
+- [iOS] `startScan` now completes on success and when the permission is denied (it only completed on failure, so it could not be awaited). A failed start releases what it set up, and starting before the view has its dimensions reports an error instead of doing nothing. `stopCamera` now completes as well.
+- [Android] A camera that fails to open (for example, in use by another app) is reported to `QRView`, which shows the same error state. A camera that starts later clears it. `startScan` now completes, and starting again resumes the preview zxing paused after the failure. An unknown barcode format index no longer replies with an error before scanning every format.
+- Disposing a `QRView` no longer surfaces an unhandled error when stopping the camera fails.
+- CI runs `flutter test`; the package has widget tests for the failure path.
+- Example app: `.tool-versions` pins Flutter 3.50.0 like the package (it still said 3.41.0).
+- Tooling: CI builds the example's release APK. The example no longer tracks the generated `ios/Flutter/ephemeral` files, which held machine-local paths; they're ignored now.
 - Tooling: CI runs once per PR. Pushes trigger CI only on `master`, and a new push to a PR cancels its stale run, which halves macOS runner use for the iOS tests. The iOS tests run on the `macos-15-intel` runner while the arm64 macOS pool is starved.
 
 ## 2.3.3
