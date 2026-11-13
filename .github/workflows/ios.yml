@@ -35,7 +35,7 @@ jobs:
     # (jobs are cancelled without ever getting a runner). Move back to macos-15
     # (arm64) once capacity recovers, or before macos-15-intel is retired (~Aug 2027).
     runs-on: macos-15-intel
-    timeout-minutes: 25
+    timeout-minutes: 45 # Intel runners take 22-30 min; 25 was sized for arm64.
     steps:
       - uses: actions/checkout@v7
       - name: Boot an iOS simulator

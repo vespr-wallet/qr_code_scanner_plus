@@ -4,6 +4,7 @@
 - `QRView` works with any kind of key. It no longer casts its key to a `GlobalKey` (which threw for a `ValueKey` or `UniqueKey`): iOS now reads the view size through a key of its own.
 - Malformed native messages (`onRecognizeQR`, `onCameraError`) no longer throw cast errors. Fields of the wrong type are treated as missing.
 - Web: the view no longer relies on null assertions; `onPlatformViewCreated` now fires before the camera lookup, so `onPermissionSet` always has a controller when the camera is denied or fails.
+- Tooling: the iOS CI job gets 45 minutes instead of 25, because the `macos-15-intel` runner takes 22 to 30 minutes for it.
 
 ## 2.4.0
 
