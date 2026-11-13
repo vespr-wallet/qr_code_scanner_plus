@@ -106,7 +106,7 @@ class _QRViewState extends State<QRView> {
         child: Stack(
           fit: StackFit.passthrough,
           children: [
-            _getPlatformQrView(),
+            KeyedSubtree(key: _sizeKey, child: _getPlatformQrView()),
             if (cameraError != null)
               // Opaque, so nothing the app draws under the scanner (such as a
               // loading indicator) shows through: without a camera frame the
@@ -150,11 +150,16 @@ class _QRViewState extends State<QRView> {
     controller?._disposeImpl();
   }
 
+  /// iOS reads the view's size through this key, so [QRView.key] can be any
+  /// kind of key.
+  final GlobalKey _sizeKey = GlobalKey(debugLabel: 'QRView size');
+
   Future<void> updateDimensions() async {
-    if (_channel == null) return;
+    final channel = _channel;
+    if (channel == null) return;
     await QRViewController.updateDimensions(
-      widget.key as GlobalKey<State<StatefulWidget>>,
-      _channel!,
+      _sizeKey,
+      channel,
       overlay: widget.overlay,
     );
   }
@@ -211,7 +216,6 @@ class _QRViewState extends State<QRView> {
 
     final newController = QRViewController._(
       channel,
-      widget.key as GlobalKey<State<StatefulWidget>>?,
       widget.onPermissionSet,
       widget.cameraFacing,
     );
@@ -237,7 +241,7 @@ class _QRViewState extends State<QRView> {
   Future<void> _startCamera(QRViewController controller) async {
     try {
       await controller._startScan(
-        widget.key as GlobalKey<State<StatefulWidget>>,
+        _sizeKey,
         widget.overlay,
         widget.formatsAllowed,
       );
@@ -393,7 +397,6 @@ class _QrCameraSettings {
 class QRViewController {
   QRViewController._(
     MethodChannel channel,
-    GlobalKey? qrKey,
     PermissionSetCallback? onPermissionSet,
     CameraFacing cameraFacing,
   ) : _channel = channel,
@@ -401,24 +404,31 @@ class QRViewController {
     _channel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'onRecognizeQR':
-          if (call.arguments != null) {
-            final args = call.arguments as Map;
-            final code = args['code'] as String?;
-            final rawType = args['type'] as String;
-            // Raw bytes are only supported by Android.
-            final rawBytes = args['rawBytes'] as List<int>?;
-            final format = BarcodeTypesExtension.fromString(rawType);
-            if (format != BarcodeFormat.unknown) {
-              final barcode = Barcode(code, format, rawBytes);
-              _scanUpdateController.sink.add(barcode);
-            } else {
+          final args = call.arguments;
+          if (args is Map) {
+            final rawType = args['type'];
+            final format = rawType is String
+                ? BarcodeTypesExtension.fromString(rawType)
+                : BarcodeFormat.unknown;
+            if (format == BarcodeFormat.unknown) {
               throw Exception('Unexpected barcode type $rawType');
             }
+            final code = args['code'];
+            // Raw bytes are only supported by Android.
+            final rawBytes = args['rawBytes'];
+            _scanUpdateController.sink.add(
+              Barcode(
+                code is String ? code : null,
+                format,
+                rawBytes is List<int> ? rawBytes : null,
+              ),
+            );
           }
           break;
         case 'onCameraError':
+          final message = call.arguments;
           _onCameraError?.call(
-            CameraException('cameraError', call.arguments as String?),
+            CameraException('cameraError', message is String ? message : null),
           );
           break;
         case 'onCameraStarted':
@@ -625,8 +635,8 @@ class QRViewController {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       // Add small delay to ensure the render box is loaded
       await Future.delayed(const Duration(milliseconds: 300));
-      if (key.currentContext == null) return false;
-      final renderBox = key.currentContext!.findRenderObject() as RenderBox;
+      final renderBox = key.currentContext?.findRenderObject();
+      if (renderBox is! RenderBox) return false;
       try {
         await channel.invokeMethod('setDimensions', {
           'width': renderBox.size.width,

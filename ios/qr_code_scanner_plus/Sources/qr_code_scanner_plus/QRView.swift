@@ -53,7 +53,7 @@ public class QRView:NSObject,FlutterPlatformView {
     public init(withFrame frame: CGRect, withRegistrar registrar: FlutterPluginRegistrar, withId id: Int64, params: Dictionary<String, Any>){
         self.registrar = registrar
         previewView = PreviewContainerView(frame: frame)
-        cameraFacing = CameraPosition(rawValue: UInt(Int(params["cameraFacing"] as! Double))) ?? .back
+        cameraFacing = (params["cameraFacing"] as? NSNumber).flatMap { CameraPosition(rawValue: $0.uintValue) } ?? .back
         channel = FlutterMethodChannel(name: "net.touchcapture.qr.flutterqrplus/qrview_\(id)", binaryMessenger: registrar.messenger())
         super.init()
 
@@ -75,7 +75,10 @@ public class QRView:NSObject,FlutterPlatformView {
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
             switch(call.method){
                 case "setDimensions":
-                    let arguments = call.arguments as! Dictionary<String, Double>
+                    guard let arguments = call.arguments as? Dictionary<String, Double> else {
+                        result(FlutterError(code: "invalid-arguments", message: "setDimensions expects a map of sizes", details: nil))
+                        return
+                    }
                     self?.setDimensions(result,
                                         width: arguments["width"] ?? 0,
                                         height: arguments["height"] ?? 0,
@@ -83,7 +86,11 @@ public class QRView:NSObject,FlutterPlatformView {
                                         scanAreaHeight: arguments["scanAreaHeight"] ?? 0,
                                         scanAreaOffset: arguments["scanAreaOffset"] ?? 0)
                 case "startScan":
-                    self?.startScan(call.arguments as! Array<Int>, result)
+                    guard let arguments = call.arguments as? Array<Int> else {
+                        result(FlutterError(code: "invalid-arguments", message: "startScan expects a list of barcode format indexes", details: nil))
+                        return
+                    }
+                    self?.startScan(arguments, result)
                 case "flipCamera":
                     self?.flipCamera(result)
                 case "toggleFlash":
@@ -146,11 +153,9 @@ public class QRView:NSObject,FlutterPlatformView {
     }
 
     func startScan(_ arguments: Array<Int>, _ result: @escaping FlutterResult) {
-        // Check for allowed barcodes
-        var allowedBarcodeTypes: Array<AVMetadataObject.ObjectType> = []
-        arguments.forEach { arg in
-            allowedBarcodeTypes.append( QRCodeTypes[arg]!)
-        }
+        // An empty list scans every format. Like Android, an unknown format index also scans every format.
+        let knownTypes = arguments.compactMap { QRCodeTypes[$0] }
+        let allowedBarcodeTypes = knownTypes.count == arguments.count ? knownTypes : []
         NativeBarcodeScanner.requestCameraPermission { [weak self] permissionGranted in
             guard let self = self else {
                 result(FlutterError(code: "disposed", message: "The scanner view was disposed", details: nil))
