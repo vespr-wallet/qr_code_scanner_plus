@@ -1,3 +1,8 @@
+## 2.5.0
+
+- [Android] The plugin's `minSdk` goes from 21 to 23, because AndroidX AppCompat 1.8.0 requires it. Flutter 3.50 already refuses to build apps below API 23 and warns below 24, so apps on current Flutter are not affected.
+- Dependencies: AndroidX AppCompat 1.7.1 → 1.8.0 (fixes the window title of `AlertDialog`s for accessibility, dispatches configuration changes to the view tree, and fixes toolbar height and font variation settings). zxing core 3.5.4 and zxing-android-embedded 4.3.0 are still the latest. Dart dependencies are unchanged.
+
 ## 2.4.1
 
 - [iOS] An unknown barcode format index passed to `startScan` scans every format, as on Android, instead of crashing on a force unwrap. Malformed `setDimensions` or `startScan` arguments report an `invalid-arguments` error, and missing creation parameters fall back to the back camera, instead of crashing on forced casts.
