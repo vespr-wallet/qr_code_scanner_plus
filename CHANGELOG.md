@@ -1,6 +1,7 @@
 ## Unreleased
 
 - Tooling: Flutter 3.50.1 in `.tool-versions` (package and example app) and CI. The minimum SDK constraints are unchanged.
+- Tooling: CI (`dart.yml`, `ios.yml`) reads the Flutter version from `.tool-versions` instead of a hard-coded `flutter-version`, so a Flutter bump only edits `.tool-versions`. The step fails if the `flutter` line is missing. The iOS tests also run when `.tool-versions` changes.
 
 ## 2.5.0
 
