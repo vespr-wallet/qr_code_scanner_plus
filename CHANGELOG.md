@@ -1,3 +1,7 @@
+## Unreleased
+
+- Tooling: Flutter 3.50.1 in `.tool-versions` (package and example app) and CI. The minimum SDK constraints are unchanged.
+
 ## 2.5.0
 
 - [Android] The plugin's `minSdk` goes from 21 to 23, because AndroidX AppCompat 1.8.0 requires it. Flutter 3.50 already refuses to build apps below API 23 and warns below 24, so apps on current Flutter are not affected.
