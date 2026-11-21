@@ -12,6 +12,7 @@ on:
       - 'example/pubspec.yaml'
       - 'tool/test_ios.sh'
       - '.github/workflows/ios.yml'
+      - '.tool-versions'
   pull_request:
     paths:
       - 'ios/**'
@@ -22,6 +23,7 @@ on:
       - 'example/pubspec.yaml'
       - 'tool/test_ios.sh'
       - '.github/workflows/ios.yml'
+      - '.tool-versions'
 
 # One run per PR: branches get only the pull_request run, and a new push to a
 # PR cancels its stale run. Pushes to master always run to completion.
@@ -52,10 +54,19 @@ jobs:
         env:
           SIMULATOR_UDID: ${{ steps.simulator.outputs.udid }}
         run: ios/Tests/run_orientation_tests.sh "$SIMULATOR_UDID"
+      - name: Read Flutter version from .tool-versions
+        id: flutter
+        run: |
+          version="$(awk '$1 == "flutter" { sub(/-stable$/, "", $2); print $2 }' .tool-versions)"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error file=.tool-versions::Expected one 'flutter <x.y.z>-stable' line, got '$version'"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.50.1
+          flutter-version: ${{ steps.flutter.outputs.version }}
           cache: true
       - name: Run plugin registration regression tests
         env:
